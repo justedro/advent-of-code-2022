@@ -27,10 +27,10 @@ public class D14T1 {
     }
 
     private static char[][] map;
-    private static int minx = Integer.MAX_VALUE;;
-    private static int miny = 0;;
-    private static int maxx = Integer.MIN_VALUE;;
-    private static int maxy = Integer.MIN_VALUE;;
+    private static int minx = Integer.MAX_VALUE;
+    private static int miny = 0;
+    private static int maxx = Integer.MIN_VALUE;
+    private static int maxy = Integer.MIN_VALUE;
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
