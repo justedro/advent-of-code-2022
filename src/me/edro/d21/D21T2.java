@@ -6,80 +6,95 @@ import java.util.Scanner;
 
 public class D21T2 {
 
-    public interface Job {
-        long calculate();
+    public static abstract class Job {
+        long calculate() throws Exception {
+            throw new Exception("not impl");
+        };
+
+        Job l;
+        Job r;
+
+        String name;
+
+        void validate() throws Exception {
+            if (name.equals("humn") || name.equals("root")){
+                throw new Exception("not allowed");
+            }
+        }
     }
 
-    public static class Constant implements Job {
-        private long value;
+    public static class Constant extends Job {
+        private final long value;
 
-        Constant(long value){
+        Constant(long value, String name) {
             this.value = value;
+            this.name = name;
         }
 
         @Override
-        public long calculate() {
+        public long calculate() throws Exception {
+            validate();
             return value;
         }
     }
 
-    public static class Plus implements Job {
-        Job l;
-        Job r;
-        Plus(Job l, Job r){
+    public static class Plus extends Job {
+        Plus(Job l, Job r, String name) {
             this.l = l;
             this.r = r;
+            this.name = name;
         }
 
         @Override
-        public long calculate(){
+        public long calculate() throws Exception {
+            validate();
             return l.calculate() + r.calculate();
         }
     }
 
-    public static class Minus implements Job {
-        Job l;
-        Job r;
-        Minus(Job l, Job r){
+    public static class Minus extends Job {
+        Minus(Job l, Job r, String name) {
             this.l = l;
             this.r = r;
+            this.name = name;
         }
 
         @Override
-        public long calculate(){
+        public long calculate() throws Exception {
+            validate();
             return l.calculate() - r.calculate();
         }
     }
 
-    public static class Divide implements Job {
-        Job l;
-        Job r;
-        Divide(Job l, Job r){
+    public static class Divide extends Job {
+        Divide(Job l, Job r, String name) {
             this.l = l;
             this.r = r;
+            this.name = name;
         }
 
         @Override
-        public long calculate(){
+        public long calculate() throws Exception {
+            validate();
             return l.calculate() / r.calculate();
         }
     }
 
-    public static class Multiply implements Job {
-        Job l;
-        Job r;
-        Multiply(Job l, Job r){
+    public static class Multiply extends Job {
+        Multiply(Job l, Job r, String name) {
             this.l = l;
             this.r = r;
+            this.name = name;
         }
 
         @Override
-        public long calculate(){
+        public long calculate() throws Exception {
+            validate();
             return l.calculate() * r.calculate();
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Scanner scanner = new Scanner(System.in);
 
         Map<String, String> script = new HashMap<>();
@@ -92,27 +107,117 @@ public class D21T2 {
             }
         }
 
-        parse("root", script);
+        Map<String, Job> parsed = new HashMap<>();
+        parse("root", script, parsed);
 
-        System.out.println();
+        Job root = parsed.get("root");
+        simplify(root);
+
+        Job iter;
+        long ans;
+        if (root.l instanceof Constant){
+            iter = root.r;
+            ans = root.l.calculate();
+        } else {
+            iter = root.l;
+            ans = root.r.calculate();
+        }
+
+        while (!iter.name.equals("humn")){
+            long c;
+            Job t;
+            boolean rev;
+            if (iter.l instanceof Constant && !iter.l.name.equals("humn")){
+                c = iter.l.calculate();
+                t = iter.r;
+                rev = false;
+            } else {
+                c = iter.r.calculate();
+                t = iter.l;
+                rev = true;
+            }
+
+            if (iter instanceof Divide){
+                if (!rev){
+                    ans = ans / c;
+                } else {
+                    ans = c * ans;
+                }
+            }
+
+            if (iter instanceof Multiply){
+                if (!rev){
+                    ans = ans / c;
+                } else {
+                    ans = ans / c;
+                }
+            }
+
+            if (iter instanceof Minus){
+                if (!rev){
+                    ans = c - ans;
+                } else {
+                    ans = ans + c;
+                }
+            }
+
+            if (iter instanceof Plus){
+                if (!rev){
+                    ans = ans - c;
+                } else {
+                    ans = ans - c;
+                }
+            }
+
+            iter = t;
+        }
+
+        System.out.println(ans);
     }
 
-    private static long parse(String node, Map<String, String> script, Map<String, Job> parsed) {
+    private static Job simplify(Job j) {
+        if (j instanceof Constant){
+            return j;
+        }
+
+        try {
+            return new Constant(j.calculate(), j.name);
+        } catch (Exception ignored){
+            j.l = simplify(j.l);
+            j.r = simplify(j.r);
+        }
+
+        return j;
+    }
+
+
+    private static Job parse(String node, Map<String, String> script, Map<String, Job> parsed) {
         String[] op = script.get(node).split(" ");
-        if (op.length == 1){
-            return Long.parseLong(op[0]);
+        Job j;
+        if (op.length == 1) {
+            j = new Constant(Long.parseLong(op[0]), node);
+        } else {
+            switch (op[1]) {
+                case "*":
+                    j = new Multiply(parse(op[0], script, parsed), parse(op[2], script, parsed), node);
+                    break;
+                case "/":
+                    j = new Divide(parse(op[0], script, parsed), parse(op[2], script, parsed), node);
+                    break;
+                case "+":
+                    j = new Plus(parse(op[0], script, parsed), parse(op[2], script, parsed), node);
+                    break;
+                case "-":
+                default:
+                    j = new Minus(parse(op[0], script, parsed), parse(op[2], script, parsed), node);
+                    break;
+            }
         }
 
-        switch (op[1]){
-            case "*":
-                return calculate(op[0], script) * calculate(op[2], script);
-            case "/":
-                return calculate(op[0], script) / calculate(op[2], script);
-            case "+":
-                return calculate(op[0], script) + calculate(op[2], script);
-            case "-":
-            default:
-                return calculate(op[0], script) - calculate(op[2], script);
-        }
+        parsed.put(node, j);
+
+        return j;
     }
+
+
 }
